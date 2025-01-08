@@ -1,0 +1,14 @@
+{
+    "123": {
+        "command": "456",
+        "description": ""
+    },
+    "asd": {
+        "command": "asd",
+        "description": "asd"
+    },
+    "zxc": {
+        "command": "zxc",
+        "description": "zxc"
+    }
+}
