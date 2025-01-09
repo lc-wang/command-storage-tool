@@ -27,14 +27,6 @@ def add_command(commands):
     commands[name] = {"command": command, "description": description}
     print(f"Command '{name}' added successfully!")
 
-def view_commands(commands):
-    """View all saved commands."""
-    if not commands:
-        print("No commands saved yet.")
-        return
-    for name, details in commands.items():
-        print(f"\nName: {name}\nCommand: {details['command']}\nDescription: {details.get('description', 'No description')}\n")
-
 def delete_command(commands):
     """Delete a command by name."""
     name = input("Enter the name of the command to delete: ").strip()
