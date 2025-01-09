@@ -22,24 +22,64 @@ class CommandToolbox(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Linux Commands Toolbox")
-        self.geometry("600x400")
+        self.geometry("800x400")
         self.commands = load_commands()
+        self.categories = self.get_categories()
 
         self.create_widgets()
 
     def create_widgets(self):
-        tk.Button(self, text="Add Command", command=self.add_command).pack(pady=10)
-        tk.Button(self, text="Delete Command", command=self.delete_command).pack(pady=10)
-        tk.Button(self, text="Execute Command", command=self.execute_command).pack(pady=10)
-        tk.Button(self, text="Exit", command=self.quit).pack(pady=10)
-        self.command_listbox = tk.Listbox(self, width=80)
-        self.command_listbox.pack(pady=10)
-        self.update_command_listbox()
+        self.sidebar_frame = tk.Frame(self, width=200, bg='lightgrey')
+        self.sidebar_frame.pack(expand=False, fill='y', side='left', anchor='nw')
 
-    def update_command_listbox(self):
+        self.main_frame = tk.Frame(self, width=600)
+        self.main_frame.pack(expand=True, fill='both', side='right')
+
+        self.category_listbox = tk.Listbox(self.sidebar_frame, width=30)
+        self.category_listbox.pack(pady=10, padx=10)
+        self.category_listbox.bind("<<ListboxSelect>>", self.update_command_listbox)
+
+        tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
+
+        self.command_listbox = tk.Listbox(self.main_frame, width=80)
+        self.command_listbox.pack(pady=10)
+
+        tk.Button(self.main_frame, text="Add Command", command=self.add_command).pack(pady=10)
+        tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
+        tk.Button(self.main_frame, text="Execute Command", command=self.execute_command).pack(pady=10)
+        tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
+
+        self.update_category_listbox()
+
+    def get_categories(self):
+        """Get unique categories from commands."""
+        categories = set()
+        for details in self.commands.values():
+            categories.add(details.get('category', 'Uncategorized'))
+        return list(categories)
+
+    def update_category_listbox(self):
+        self.category_listbox.delete(0, tk.END)
+        for category in self.categories:
+            self.category_listbox.insert(tk.END, category)
+
+    def update_command_listbox(self, event=None):
+        selected_category = self.category_listbox.get(tk.ACTIVE)
         self.command_listbox.delete(0, tk.END)
         for name, details in self.commands.items():
-            self.command_listbox.insert(tk.END, f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}")
+            if details.get('category', 'Uncategorized') == selected_category:
+                self.command_listbox.insert(tk.END, f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}")
+
+    def add_category(self):
+        category = simpledialog.askstring("Add Category", "Enter a name for the category:").strip()
+        if not category:
+            return
+        if category in self.categories:
+            messagebox.showerror("Error", "A category with this name already exists.")
+            return
+        self.categories.append(category)
+        self.update_category_listbox()
+        messagebox.showinfo("Success", f"Category '{category}' added successfully!")
 
     def add_command(self):
         name = simpledialog.askstring("Add Command", "Enter a name for the command:").strip()
@@ -50,15 +90,19 @@ class CommandToolbox(tk.Tk):
             return
         command = simpledialog.askstring("Add Command", "Enter the Linux command:").strip()
         description = simpledialog.askstring("Add Command", "Enter a description (optional):").strip()
-        self.commands[name] = {"command": command, "description": description}
+        category = simpledialog.askstring("Add Command", "Enter a category:").strip()
+        if not category:
+            category = 'Uncategorized'
+        self.commands[name] = {"command": command, "description": description, "category": category}
         save_commands(self.commands)
         self.update_command_listbox()
         messagebox.showinfo("Success", f"Command '{name}' added successfully!")
 
     def delete_command(self):
-        name = simpledialog.askstring("Delete Command", "Enter the name of the command to delete:").strip()
-        if not name:
+        selected_command = self.command_listbox.get(tk.ACTIVE)
+        if not selected_command:
             return
+        name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
             del self.commands[name]
             save_commands(self.commands)
@@ -68,9 +112,10 @@ class CommandToolbox(tk.Tk):
             messagebox.showerror("Error", "No command found with that name.")
 
     def execute_command(self):
-        name = simpledialog.askstring("Execute Command", "Enter the name of the command to execute:").strip()
-        if not name:
+        selected_command = self.command_listbox.get(tk.ACTIVE)
+        if not selected_command:
             return
+        name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
             os.system(self.commands[name]["command"])
         else:
