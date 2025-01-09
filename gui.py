@@ -45,7 +45,7 @@ class CommandToolbox(tk.Tk):
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
 
-        tk.Button(self.main_frame, text="Add Command", command=self.add_command).pack(pady=10)
+        tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
         tk.Button(self.main_frame, text="Execute Command", command=self.execute_command).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
@@ -103,21 +103,47 @@ class CommandToolbox(tk.Tk):
         self.update_command_listbox()
         messagebox.showinfo("Success", f"Category '{selected_category}' and all its commands deleted successfully!")
 
+    def add_command_window(self):
+        self.add_command_frame = tk.Toplevel(self)
+        self.add_command_frame.title("Add Command")
+        self.add_command_frame.geometry("300x250")
+
+        tk.Label(self.add_command_frame, text="Name:").pack(pady=5)
+        self.command_name_entry = tk.Entry(self.add_command_frame)
+        self.command_name_entry.pack(pady=5)
+
+        tk.Label(self.add_command_frame, text="Command:").pack(pady=5)
+        self.command_entry = tk.Entry(self.add_command_frame)
+        self.command_entry.pack(pady=5)
+
+        tk.Label(self.add_command_frame, text="Description:").pack(pady=5)
+        self.command_description_entry = tk.Entry(self.add_command_frame)
+        self.command_description_entry.pack(pady=5)
+
+        tk.Label(self.add_command_frame, text="Category:").pack(pady=5)
+        self.command_category_entry = tk.Entry(self.add_command_frame)
+        self.command_category_entry.pack(pady=5)
+
+        tk.Button(self.add_command_frame, text="Save", command=self.add_command).pack(pady=5)
+        tk.Button(self.add_command_frame, text="Cancel", command=self.add_command_frame.destroy).pack(pady=5)
+
     def add_command(self):
-        name = simpledialog.askstring("Add Command", "Enter a name for the command:").strip()
+        name = self.command_name_entry.get().strip()
         if not name:
+            messagebox.showerror("Error", "Command name cannot be empty.")
             return
         if name in self.commands:
             messagebox.showerror("Error", "A command with this name already exists.")
             return
-        command = simpledialog.askstring("Add Command", "Enter the Linux command:").strip()
-        description = simpledialog.askstring("Add Command", "Enter a description (optional):").strip()
-        category = simpledialog.askstring("Add Command", "Enter a category:").strip()
+        command = self.command_entry.get().strip()
+        description = self.command_description_entry.get().strip()
+        category = self.command_category_entry.get().strip()
         if not category:
             category = 'Uncategorized'
         self.commands[name] = {"command": command, "description": description, "category": category}
         save_commands(self.commands)
         self.update_command_listbox()
+        self.add_command_frame.destroy()
         messagebox.showinfo("Success", f"Command '{name}' added successfully!")
 
     def delete_command(self):
