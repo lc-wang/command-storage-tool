@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
+from tkinter import ttk  # Import the ttk module for Combobox
 import json
 import os
 
@@ -106,7 +107,7 @@ class CommandToolbox(tk.Tk):
     def add_command_window(self):
         self.add_command_frame = tk.Toplevel(self)
         self.add_command_frame.title("Add Command")
-        self.add_command_frame.geometry("300x250")
+        self.add_command_frame.geometry("300x300")
 
         tk.Label(self.add_command_frame, text="Name:").pack(pady=5)
         self.command_name_entry = tk.Entry(self.add_command_frame)
@@ -121,8 +122,8 @@ class CommandToolbox(tk.Tk):
         self.command_description_entry.pack(pady=5)
 
         tk.Label(self.add_command_frame, text="Category:").pack(pady=5)
-        self.command_category_entry = tk.Entry(self.add_command_frame)
-        self.command_category_entry.pack(pady=5)
+        self.command_category_combobox = ttk.Combobox(self.add_command_frame, values=self.categories)
+        self.command_category_combobox.pack(pady=5)
 
         tk.Button(self.add_command_frame, text="Save", command=self.add_command).pack(pady=5)
         tk.Button(self.add_command_frame, text="Cancel", command=self.add_command_frame.destroy).pack(pady=5)
@@ -137,7 +138,7 @@ class CommandToolbox(tk.Tk):
             return
         command = self.command_entry.get().strip()
         description = self.command_description_entry.get().strip()
-        category = self.command_category_entry.get().strip()
+        category = self.command_category_combobox.get().strip()
         if not category:
             category = 'Uncategorized'
         self.commands[name] = {"command": command, "description": description, "category": category}
