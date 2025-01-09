@@ -40,6 +40,7 @@ class CommandToolbox(tk.Tk):
         self.category_listbox.bind("<<ListboxSelect>>", self.update_command_listbox)
 
         tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
+        tk.Button(self.sidebar_frame, text="Delete Category", command=self.delete_category).pack(pady=10)
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
@@ -80,6 +81,27 @@ class CommandToolbox(tk.Tk):
         self.categories.append(category)
         self.update_category_listbox()
         messagebox.showinfo("Success", f"Category '{category}' added successfully!")
+
+    def delete_category(self):
+        selected_category = self.category_listbox.get(tk.ACTIVE)
+        if not selected_category:
+            return
+        if selected_category == 'Uncategorized':
+            messagebox.showerror("Error", "Cannot delete the 'Uncategorized' category.")
+            return
+        confirm = messagebox.askyesno("Delete Category", f"Are you sure you want to delete the category '{selected_category}' and all its commands?")
+        if not confirm:
+            return
+        # Remove all commands in the selected category
+        commands_to_delete = [name for name, details in self.commands.items() if details.get('category', 'Uncategorized') == selected_category]
+        for name in commands_to_delete:
+            del self.commands[name]
+        # Remove the category
+        self.categories.remove(selected_category)
+        save_commands(self.commands)
+        self.update_category_listbox()
+        self.update_command_listbox()
+        messagebox.showinfo("Success", f"Category '{selected_category}' and all its commands deleted successfully!")
 
     def add_command(self):
         name = simpledialog.askstring("Add Command", "Enter a name for the command:").strip()
