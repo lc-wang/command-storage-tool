@@ -68,23 +68,53 @@ class CommandToolbox(tk.Tk):
         selected_category = self.category_listbox.get(tk.ACTIVE)
         if not selected_category:
             return
-        self.command_listbox.delete(0, tk.END)
-        for name, details in self.commands.items():
-            if details.get('category', 'Uncategorized') == selected_category:
-                self.command_listbox.insert(tk.END, f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}")
+        try:
+            self.command_listbox.delete(0, tk.END)
+            # Debugging: Print selected category
+            print(f"Selected Category: {selected_category}")
+            
+            for name, details in self.commands.items():
+                # Debugging: Print command details
+                print(f"Command Name: {name}, Details: {details}")
+                
+                if details.get('category', 'Uncategorized') == selected_category:
+                    command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
+                    # Debugging: Print the command info before insertion
+                    print(f"Inserting Command Info: {command_info}")
+                    self.command_listbox.insert(tk.END, command_info)
+            
+            # Bind the event to display the command result on selection
+            self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
+        except Exception as e:
+            # Debugging: Print any exception that occurs
+            print(f"Exception occurred: {e}")
+            
+            # Bind the event to display the command result on selection
+            self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
+
+    def display_selected_command_result(self, event):
+        selected_command = self.command_listbox.get(tk.ACTIVE)
+        if not selected_command:
+            return
+        name = selected_command.split(",")[0].split(":")[1].strip()
+        self.display_command_result(name)
 
     def display_command_result(self, name):
-        details = self.commands[name]
+        details = self.commands.get(name)
+        if not details:
+            messagebox.showerror("Error", f"No command found with the name '{name}'.")
+            return
         command = details["command"]
         self.output_text.config(state=tk.NORMAL)
         self.output_text.delete(1.0, tk.END)
         self.output_text.insert(tk.END, f"Executing command: {command}\n")
         self.output_text.config(state=tk.DISABLED)
-        threading.Thread(target=self.run_command, args=(name, command)).start()
+        threading.Thread(target=self.run_command, args=(name, command, self.output_text)).start()
 
-    def run_command(self, name, command):
-        count = self.commands[name]["count"]
-        interval = self.commands[name]["interval"]
+    def run_command(self, name, command, output_text):
+        # Use default values if 'count' or 'interval' keys are missing
+        count = self.commands[name].get("count", 1)
+        interval = self.commands[name].get("interval", 0)
 
         # Initialize progress info for the command
         self.progress_info[name] = {
@@ -101,7 +131,7 @@ class CommandToolbox(tk.Tk):
                 output = str(e)
             
             # Use the after method to update the GUI from the main thread
-            self.after(0, self.update_output_text, f"Execution {i+1}/{count}:\n{output}")
+            self.after(0, self.update_output_text, f"Execution {i+1}/{count}:\n{output}", output_text)
             
             # Update progress info
             self.progress_info[name]['progress'] = i + 1
@@ -112,10 +142,10 @@ class CommandToolbox(tk.Tk):
         # Final update to ensure progress is set to max
         self.progress_info[name]['progress'] = count
 
-    def update_output_text(self, output):
-        self.output_text.config(state=tk.NORMAL)
-        self.output_text.insert(tk.END, f"{output}\n")
-        self.output_text.config(state=tk.DISABLED)
+    def update_output_text(self, output, output_text):
+        output_text.config(state=tk.NORMAL)
+        output_text.insert(tk.END, f"{output}\n")
+        output_text.config(state=tk.DISABLED)
 
     def show_progress_window(self):
         # Create a new window to display progress bars
@@ -254,8 +284,8 @@ class CommandToolbox(tk.Tk):
             "command": command, 
             "description": description, 
             "category": category,
-            "interval": int(interval),
-            "count": int(count)
+            "interval": int(interval) if interval else 0,
+            "count": int(count) if count else 1
         }
         save_commands(self.commands)
         self.update_command_listbox()
@@ -322,8 +352,8 @@ class CommandToolbox(tk.Tk):
             "command": command, 
             "description": description, 
             "category": category,
-            "interval": int(interval),
-            "count": int(count)
+            "interval": int(interval) if interval else 0,
+            "count": int(count) if count else 1
         }
         save_commands(self.commands)
         self.update_command_listbox()
@@ -350,17 +380,17 @@ class CommandToolbox(tk.Tk):
         name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
             # Start the command execution in a separate thread
-            threading.Thread(target=self.execute_command, args=(name,)).start()
+            threading.Thread(target=self.execute_command, args=(name, self.output_text)).start()
         else:
             messagebox.showerror("Error", "No command found with that name.")
 
-    def execute_command(self, name):
+    def execute_command(self, name, output_text):
         if name in self.commands:
             command = self.commands[name]["command"]
             interval = self.commands[name]["interval"]
             count = self.commands[name]["count"]
-            self.output_text.config(state=tk.NORMAL)
-            self.output_text.delete(1.0, tk.END)
+            output_text.config(state=tk.NORMAL)
+            output_text.delete(1.0, tk.END)
             # Initialize progress info for the command
             self.progress_info[name] = {
                 'progress': 0,
@@ -375,15 +405,15 @@ class CommandToolbox(tk.Tk):
                     output = str(e)
                 
                 # Display the output in the Text widget immediately
-                self.output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
-                self.output_text.see(tk.END)
+                output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
+                output_text.see(tk.END)
 
                 # Update progress info
                 self.progress_info[name]['progress'] = i + 1
                 self.progress_info[name]['output'].append(output)
                 
                 time.sleep(interval)
-            self.output_text.config(state=tk.DISABLED)
+            output_text.config(state=tk.DISABLED)
 
             # Final update to ensure progress is set to max
             self.progress_info[name]['progress'] = count
