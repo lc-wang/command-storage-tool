@@ -31,6 +31,7 @@ class CommandToolbox(tk.Tk):
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
+        self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
@@ -158,6 +159,74 @@ class CommandToolbox(tk.Tk):
         self.update_command_listbox()
         self.add_command_frame.destroy()
         messagebox.showinfo("Success", f"Command '{name}' added successfully!")
+
+    def modify_command_window(self, event):
+        selected_command = self.command_listbox.get(tk.ACTIVE)
+        if not selected_command:
+            return
+        name = selected_command.split(",")[0].split(":")[1].strip()
+        if name in self.commands:
+            details = self.commands[name]
+            self.modify_command_frame = tk.Toplevel(self)
+            self.modify_command_frame.title("Modify Command")
+            self.modify_command_frame.geometry("300x400")
+
+            tk.Label(self.modify_command_frame, text="Name:").pack(pady=5)
+            self.modify_command_name_entry = tk.Entry(self.modify_command_frame)
+            self.modify_command_name_entry.pack(pady=5)
+            self.modify_command_name_entry.insert(0, name)
+            self.modify_command_name_entry.config(state='disabled')
+
+            tk.Label(self.modify_command_frame, text="Command:").pack(pady=5)
+            self.modify_command_entry = tk.Entry(self.modify_command_frame)
+            self.modify_command_entry.pack(pady=5)
+            self.modify_command_entry.insert(0, details['command'])
+
+            tk.Label(self.modify_command_frame, text="Description:").pack(pady=5)
+            self.modify_command_description_entry = tk.Entry(self.modify_command_frame)
+            self.modify_command_description_entry.pack(pady=5)
+            self.modify_command_description_entry.insert(0, details.get('description', ''))
+
+            tk.Label(self.modify_command_frame, text="Category:").pack(pady=5)
+            self.modify_command_category_combobox = ttk.Combobox(self.modify_command_frame, values=self.categories)
+            self.modify_command_category_combobox.pack(pady=5)
+            self.modify_command_category_combobox.set(details.get('category', 'Uncategorized'))
+
+            tk.Label(self.modify_command_frame, text="Interval (seconds):").pack(pady=5)
+            self.modify_command_interval_entry = tk.Entry(self.modify_command_frame)
+            self.modify_command_interval_entry.pack(pady=5)
+            self.modify_command_interval_entry.insert(0, details.get('interval', 0))
+
+            tk.Label(self.modify_command_frame, text="Count:").pack(pady=5)
+            self.modify_command_count_entry = tk.Entry(self.modify_command_frame)
+            self.modify_command_count_entry.pack(pady=5)
+            self.modify_command_count_entry.insert(0, details.get('count', 1))
+
+            tk.Button(self.modify_command_frame, text="Save", command=lambda: self.modify_command(name)).pack(pady=5)
+            tk.Button(self.modify_command_frame, text="Cancel", command=self.modify_command_frame.destroy).pack(pady=5)
+
+    def modify_command(self, original_name):
+        command = self.modify_command_entry.get().strip()
+        description = self.modify_command_description_entry.get().strip()
+        category = self.modify_command_category_combobox.get().strip()
+        if not category:
+            category = 'Uncategorized'
+        interval = self.modify_command_interval_entry.get().strip()
+        count = self.modify_command_count_entry.get().strip()
+        if not interval.isdigit() or not count.isdigit():
+            messagebox.showerror("Error", "Interval and Count must be valid numbers.")
+            return
+        self.commands[original_name] = {
+            "command": command, 
+            "description": description, 
+            "category": category,
+            "interval": int(interval),
+            "count": int(count)
+        }
+        save_commands(self.commands)
+        self.update_command_listbox()
+        self.modify_command_frame.destroy()
+        messagebox.showinfo("Success", f"Command '{original_name}' modified successfully!")
 
     def delete_command(self):
         selected_command = self.command_listbox.get(tk.ACTIVE)
