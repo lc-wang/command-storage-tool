@@ -32,20 +32,19 @@ class CommandToolbox(tk.Tk):
 
         tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Delete Category", command=self.delete_category).pack(pady=10)
-        tk.Button(self.sidebar_frame, text="Export Config", command=self.export_config).pack(pady=10)  # Export button
-        tk.Button(self.sidebar_frame, text="Import Config", command=self.import_config).pack(pady=10)  # Import button
+        tk.Button(self.sidebar_frame, text="Export Config", command=self.export_config).pack(pady=10)
+        tk.Button(self.sidebar_frame, text="Import Config", command=self.import_config).pack(pady=10)
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
-        self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
+        self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
-        tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)
+        tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)  # Bind to start_command_thread
         tk.Button(self.main_frame, text="Show Progress", command=self.show_progress_window).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
 
-        # Add a Text widget to display command output
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
         self.output_text.pack(pady=10, fill='both', expand=True)
         self.output_text.config(state=tk.DISABLED)
@@ -97,7 +96,7 @@ class CommandToolbox(tk.Tk):
         if not selected_command:
             return
         name = selected_command.split(",")[0].split(":")[1].strip()
-        self.display_command_result(name)
+        # This method will now only select the command without executing it
 
     def display_command_result(self, name):
         details = self.commands.get(name)
@@ -376,21 +375,22 @@ class CommandToolbox(tk.Tk):
     def start_command_thread(self):
         selected_command = self.command_listbox.get(tk.ACTIVE)
         if not selected_command:
+            messagebox.showerror("Error", "Please select a command to execute.")
             return
         name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
             # Start the command execution in a separate thread
-            threading.Thread(target=self.execute_command, args=(name, self.output_text)).start()
+            threading.Thread(target=self.execute_command, args=(name,)).start()
         else:
             messagebox.showerror("Error", "No command found with that name.")
 
-    def execute_command(self, name, output_text):
+    def execute_command(self, name):
         if name in self.commands:
             command = self.commands[name]["command"]
-            interval = self.commands[name]["interval"]
-            count = self.commands[name]["count"]
-            output_text.config(state=tk.NORMAL)
-            output_text.delete(1.0, tk.END)
+            interval = self.commands[name].get("interval", 0)
+            count = self.commands[name].get("count", 1)
+            self.output_text.config(state=tk.NORMAL)
+            self.output_text.delete(1.0, tk.END)  # Clear the output_text widget
             # Initialize progress info for the command
             self.progress_info[name] = {
                 'progress': 0,
@@ -405,15 +405,15 @@ class CommandToolbox(tk.Tk):
                     output = str(e)
                 
                 # Display the output in the Text widget immediately
-                output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
-                output_text.see(tk.END)
+                self.output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
+                self.output_text.see(tk.END)
 
                 # Update progress info
                 self.progress_info[name]['progress'] = i + 1
                 self.progress_info[name]['output'].append(output)
                 
                 time.sleep(interval)
-            output_text.config(state=tk.DISABLED)
+            self.output_text.config(state=tk.DISABLED)
 
             # Final update to ensure progress is set to max
             self.progress_info[name]['progress'] = count
