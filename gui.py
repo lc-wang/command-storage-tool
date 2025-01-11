@@ -340,7 +340,6 @@ class CommandToolbox(tk.Tk):
                 self.progress_info[name]['output'].append(output)
                 
                 time.sleep(interval)
-            self.output_text.config(state=tk.DISABLED)
 
             # Final update to ensure progress is set to max
             self.progress_info[name]['progress'] = count
