@@ -10,9 +10,12 @@ class CommandToolbox(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Linux Commands Toolbox")
-        self.geometry("800x600")  # Adjusted height to accommodate output frame
+        self.geometry("800x800")  # Adjust height to accommodate more widgets
         self.commands = load_commands()
         self.categories = self.get_categories()
+
+        # Dictionary to store progress information
+        self.progress_info = {}
 
         self.create_widgets()
 
@@ -35,21 +38,17 @@ class CommandToolbox(tk.Tk):
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
         self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
-        self.command_listbox.bind("<<ListboxSelect>>", self.display_command_result)  # Bind single-click event
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
         tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)
+        tk.Button(self.main_frame, text="Show Progress", command=self.show_progress_window).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
 
         # Add a Text widget to display command output
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
         self.output_text.pack(pady=10, fill='both', expand=True)
         self.output_text.config(state=tk.DISABLED)
-
-        # Add a Progressbar widget to display command progress
-        self.progress_bar = ttk.Progressbar(self.main_frame, orient='horizontal', mode='determinate', length=500)
-        self.progress_bar.pack(pady=10, fill='both', expand=True)
 
         self.update_category_listbox()
 
@@ -60,47 +59,108 @@ class CommandToolbox(tk.Tk):
             categories.add(details.get('category', 'Uncategorized'))
         return list(categories)
 
-    def update_category_listbox(self):
+    def update_category_listbox(self, event=None):
         self.category_listbox.delete(0, tk.END)
         for category in self.categories:
             self.category_listbox.insert(tk.END, category)
 
     def update_command_listbox(self, event=None):
         selected_category = self.category_listbox.get(tk.ACTIVE)
+        if not selected_category:
+            return
         self.command_listbox.delete(0, tk.END)
         for name, details in self.commands.items():
             if details.get('category', 'Uncategorized') == selected_category:
                 self.command_listbox.insert(tk.END, f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}")
 
-    def display_command_result(self, event=None):
-        selected_command = self.command_listbox.get(tk.ACTIVE)
-        if not selected_command:
-            return
-        name = selected_command.split(",")[0].split(":")[1].strip()
-        if name in self.commands:
-            details = self.commands[name]
-            command = details["command"]
-            self.output_text.config(state=tk.NORMAL)
-            self.output_text.delete(1.0, tk.END)
-            self.output_text.insert(tk.END, f"Executing command: {command}\n")
-            self.output_text.config(state=tk.DISABLED)
-            threading.Thread(target=self.run_command, args=(command,)).start()
+    def display_command_result(self, name):
+        details = self.commands[name]
+        command = details["command"]
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.delete(1.0, tk.END)
+        self.output_text.insert(tk.END, f"Executing command: {command}\n")
+        self.output_text.config(state=tk.DISABLED)
+        threading.Thread(target=self.run_command, args=(name, command)).start()
 
-    def run_command(self, command):
-        try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            output = result.stdout if result.stdout else result.stderr
-        except Exception as e:
-            output = str(e)
-        
-        # Use the after method to update the GUI from the main thread
-        self.after(0, self.update_output_text, output)
+    def run_command(self, name, command):
+        count = self.commands[name]["count"]
+        interval = self.commands[name]["interval"]
+
+        # Initialize progress info for the command
+        self.progress_info[name] = {
+            'progress': 0,
+            'max': count,
+            'output': []
+        }
+
+        for i in range(count):
+            try:
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                output = result.stdout if result.stdout else result.stderr
+            except Exception as e:
+                output = str(e)
+            
+            # Use the after method to update the GUI from the main thread
+            self.after(0, self.update_output_text, f"Execution {i+1}/{count}:\n{output}")
+            
+            # Update progress info
+            self.progress_info[name]['progress'] = i + 1
+            self.progress_info[name]['output'].append(output)
+            
+            time.sleep(interval)
+
+        # Final update to ensure progress is set to max
+        self.progress_info[name]['progress'] = count
 
     def update_output_text(self, output):
         self.output_text.config(state=tk.NORMAL)
-        self.output_text.insert(tk.END, f"Result:\n{output}\n")
+        self.output_text.insert(tk.END, f"{output}\n")
         self.output_text.config(state=tk.DISABLED)
-        self.progress_bar['value'] = 100  # Set progress bar to complete
+
+    def show_progress_window(self):
+        # Create a new window to display progress bars
+        self.progress_window = tk.Toplevel(self)
+        self.progress_window.title("Command Progress")
+        self.progress_window.geometry("600x400")
+
+        # Create a frame to hold all progress bars
+        self.progress_frame = tk.Frame(self.progress_window)
+        self.progress_frame.pack(pady=10, fill='both', expand=True)
+
+        # Display progress bars for all commands
+        for name, info in self.progress_info.items():
+            # Create a frame for the progress bar and percentage label
+            progress_frame = tk.Frame(self.progress_frame)
+            progress_frame.pack(pady=5, fill='x')
+
+            progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate', length=400)
+            progress_bar.pack(side='left', padx=10, fill='x', expand=True)
+            percentage_label = tk.Label(progress_frame, text="0%")
+            percentage_label.pack(side='right')
+
+            # Initialize progress bar
+            progress_bar['maximum'] = info['max']
+            progress_bar['value'] = info['progress']
+            percentage = int((info['progress'] / info['max']) * 100)
+            percentage_label.config(text=f"{percentage}%")
+
+            # Store the progress bar and label in the progress info for updates
+            info['progress_bar'] = progress_bar
+            info['percentage_label'] = percentage_label
+
+        # Periodically update the progress window
+        self.update_progress_window()
+
+    def update_progress_window(self):
+        for name, info in self.progress_info.items():
+            progress_bar = info['progress_bar']
+            percentage_label = info['percentage_label']
+            progress_bar['value'] = info['progress']
+            percentage = int((info['progress'] / info['max']) * 100)
+            percentage_label.config(text=f"{percentage}%")
+
+        # Schedule next update
+        self.progress_window.after(1000, self.update_progress_window)
 
     def add_category(self):
         category = simpledialog.askstring("Add Category", "Enter a name for the category:").strip()
@@ -139,7 +199,7 @@ class CommandToolbox(tk.Tk):
     def add_command_window(self):
         self.add_command_frame = tk.Toplevel(self)
         self.add_command_frame.title("Add Command")
-        self.add_command_frame.geometry("300x400")  # Adjusted height to accommodate new fields
+        self.add_command_frame.geometry("300x400")  # Adjust height to accommodate new fields
 
         tk.Label(self.add_command_frame, text="Name:").pack(pady=5)
         self.command_name_entry = tk.Entry(self.add_command_frame)
@@ -297,7 +357,12 @@ class CommandToolbox(tk.Tk):
             count = self.commands[name]["count"]
             self.output_text.config(state=tk.NORMAL)
             self.output_text.delete(1.0, tk.END)
-            self.progress_bar['maximum'] = count
+            # Initialize progress info for the command
+            self.progress_info[name] = {
+                'progress': 0,
+                'max': count,
+                'output': []
+            }
             for i in range(count):
                 try:
                     result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -308,13 +373,16 @@ class CommandToolbox(tk.Tk):
                 # Display the output in the Text widget immediately
                 self.output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
                 self.output_text.see(tk.END)
-                
-                # Update the progress bar
-                self.progress_bar['value'] = i + 1
-                self.update()
+
+                # Update progress info
+                self.progress_info[name]['progress'] = i + 1
+                self.progress_info[name]['output'].append(output)
                 
                 time.sleep(interval)
             self.output_text.config(state=tk.DISABLED)
+
+            # Final update to ensure progress is set to max
+            self.progress_info[name]['progress'] = count
         else:
             messagebox.showerror("Error", "No command found with that name.")
 
