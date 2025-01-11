@@ -37,7 +37,6 @@ class CommandToolbox(tk.Tk):
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
-        self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
         self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
@@ -74,16 +73,6 @@ class CommandToolbox(tk.Tk):
             if details.get('category', 'Uncategorized') == selected_category:
                 command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
                 self.command_listbox.insert(tk.END, command_info)
-        
-        # Bind the event to display the command result on selection
-        self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
-
-    def display_selected_command_result(self, event):
-        selected_command = self.command_listbox.get(tk.ACTIVE)
-        if not selected_command:
-            return
-        name = selected_command.split(",")[0].split(":")[1].strip()
-        # This method will now only select the command without executing it
 
     def display_command_result(self, name):
         details = self.commands.get(name)
@@ -115,7 +104,7 @@ class CommandToolbox(tk.Tk):
                 output = result.stdout if result.stdout else result.stderr
             except Exception as e:
                 output = str(e)
-            
+
             # Use the after method to update the GUI from the main thread
             self.after(0, self.update_output_text, f"Execution {i+1}/{count}:\n{output}", output_text)
             
