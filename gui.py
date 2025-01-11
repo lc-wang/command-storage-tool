@@ -318,7 +318,6 @@ class CommandToolbox(tk.Tk):
             interval = self.commands[name].get("interval", 0)
             count = self.commands[name].get("count", 1)
             self.output_text.config(state=tk.NORMAL)
-            self.output_text.delete(1.0, tk.END)  # Clear the output_text widget before displaying new result
             # Initialize progress info for the command
             self.progress_info[name] = {
                 'progress': 0,
