@@ -4,6 +4,7 @@ from command_utils import load_commands, save_commands  # Import the utility fun
 import subprocess
 import time
 import json
+import threading
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
@@ -37,7 +38,7 @@ class CommandToolbox(tk.Tk):
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
-        tk.Button(self.main_frame, text="Execute Command", command=self.execute_command).pack(pady=10)
+        tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
 
         # Add a Text widget to display command output
@@ -247,11 +248,18 @@ class CommandToolbox(tk.Tk):
         else:
             messagebox.showerror("Error", "No command found with that name.")
 
-    def execute_command(self):
+    def start_command_thread(self):
         selected_command = self.command_listbox.get(tk.ACTIVE)
         if not selected_command:
             return
         name = selected_command.split(",")[0].split(":")[1].strip()
+        if name in self.commands:
+            # Start the command execution in a separate thread
+            threading.Thread(target=self.execute_command, args=(name,)).start()
+        else:
+            messagebox.showerror("Error", "No command found with that name.")
+
+    def execute_command(self, name):
         if name in self.commands:
             command = self.commands[name]["command"]
             interval = self.commands[name]["interval"]
