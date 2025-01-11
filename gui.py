@@ -29,7 +29,7 @@ class CommandToolbox(tk.Tk):
         self.category_listbox = tk.Listbox(self.sidebar_frame, width=30)
         self.category_listbox.pack(pady=10, padx=10)
         self.category_listbox.bind("<<ListboxSelect>>", self.update_command_listbox)
-
+        
         tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Delete Category", command=self.delete_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Export Config", command=self.export_config).pack(pady=10)
@@ -68,29 +68,15 @@ class CommandToolbox(tk.Tk):
         selected_category = self.category_listbox.get(tk.ACTIVE)
         if not selected_category:
             return
-        try:
-            self.command_listbox.delete(0, tk.END)
-            # Debugging: Print selected category
-            print(f"Selected Category: {selected_category}")
-            
-            for name, details in self.commands.items():
-                # Debugging: Print command details
-                print(f"Command Name: {name}, Details: {details}")
-                
-                if details.get('category', 'Uncategorized') == selected_category:
-                    command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
-                    # Debugging: Print the command info before insertion
-                    print(f"Inserting Command Info: {command_info}")
-                    self.command_listbox.insert(tk.END, command_info)
-            
-            # Bind the event to display the command result on selection
-            self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
-        except Exception as e:
-            # Debugging: Print any exception that occurs
-            print(f"Exception occurred: {e}")
-            
-            # Bind the event to display the command result on selection
-            self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
+        self.command_listbox.delete(0, tk.END)
+        
+        for name, details in self.commands.items():
+            if details.get('category', 'Uncategorized') == selected_category:
+                command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
+                self.command_listbox.insert(tk.END, command_info)
+        
+        # Bind the event to display the command result on selection
+        self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
 
     def display_selected_command_result(self, event):
         selected_command = self.command_listbox.get(tk.ACTIVE)
@@ -391,7 +377,7 @@ class CommandToolbox(tk.Tk):
             interval = self.commands[name].get("interval", 0)
             count = self.commands[name].get("count", 1)
             self.output_text.config(state=tk.NORMAL)
-            self.output_text.delete(1.0, tk.END)  # Clear the output_text widget
+            self.output_text.delete(1.0, tk.END)  # Clear the output_text widget before displaying new result
             # Initialize progress info for the command
             self.progress_info[name] = {
                 'progress': 0,
