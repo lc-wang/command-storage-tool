@@ -38,6 +38,7 @@ class CommandToolbox(tk.Tk):
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
         self.command_listbox.bind("<<ListboxSelect>>", self.display_selected_command_result)
+        self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
