@@ -133,6 +133,10 @@ class CommandToolbox(tk.Tk):
             progress_frame = tk.Frame(self.progress_frame)
             progress_frame.pack(pady=5, fill='x')
 
+            # Display command name in bold
+            command_label = tk.Label(progress_frame, text=name, font=("Helvetica", 12, "bold"))
+            command_label.pack(anchor='w')
+
             progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate', length=400)
             progress_bar.pack(side='left', padx=10, fill='x', expand=True)
             percentage_label = tk.Label(progress_frame, text="0%")
