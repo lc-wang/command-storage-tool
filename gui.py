@@ -74,11 +74,6 @@ class CommandToolbox(tk.Tk):
                 command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
                 self.command_listbox.insert(tk.END, command_info)
 
-    def update_output_text(self, output, output_text):
-        output_text.config(state=tk.NORMAL)
-        output_text.insert(tk.END, f"{output}\n")
-        output_text.config(state=tk.DISABLED)
-
     def show_progress_window(self):
         # Create a new window to display progress bars
         self.progress_window = tk.Toplevel(self)
