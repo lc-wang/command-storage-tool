@@ -30,6 +30,7 @@ class CommandToolbox(tk.Tk):
         tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Delete Category", command=self.delete_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Export Config", command=self.export_config).pack(pady=10)  # Export button
+        tk.Button(self.sidebar_frame, text="Import Config", command=self.import_config).pack(pady=10)  # Import button
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
@@ -281,6 +282,23 @@ class CommandToolbox(tk.Tk):
                 messagebox.showinfo("Success", f"Configuration exported to {file_path}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to export configuration: {e}")
+
+    def import_config(self):
+        # Open a file dialog to choose the JSON file
+        file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        if file_path:
+            # Load the command configuration from the chosen file
+            try:
+                with open(file_path, "r") as file:
+                    imported_commands = json.load(file)
+                self.commands.update(imported_commands)
+                self.categories = self.get_categories()
+                self.update_category_listbox()
+                self.update_command_listbox()
+                save_commands(self.commands)
+                messagebox.showinfo("Success", f"Configuration imported from {file_path}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to import configuration: {e}")
 
 if __name__ == "__main__":
     app = CommandToolbox()
