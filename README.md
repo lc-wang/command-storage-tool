@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Command Storage Tool is a Python-based application built using Tkinter that allows users to manage and execute various Linux commands. The tool provides an intuitive graphical interface to categorize, add, modify, and delete commands, as well as execute them and track their progress.
+The Command Storage Tool is a Python-based application built using Tkinter that allows users to manage and execute various commands on multiple platform like linux, window and so on. The tool provides an intuitive graphical interface to categorize, add, modify, and delete commands, as well as execute them and track their progress.
 
 ## Features
 
@@ -18,3 +18,12 @@ The Command Storage Tool is a Python-based application built using Tkinter that 
    ```bash
    git clone https://github.com/lc-wang/command-storage-tool.git
    cd command-storage-tool
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+License
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+## Contact
+For any questions or suggestions, please open an issue or contact the repository owner.
+Thank you for using Command Storage Tool!
