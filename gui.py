@@ -3,6 +3,7 @@ from tkinter import messagebox, simpledialog
 from tkinter import ttk  # Import the ttk module for Combobox
 from command_utils import load_commands, save_commands  # Import the utility functions
 import subprocess
+import time
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
@@ -99,7 +100,7 @@ class CommandToolbox(tk.Tk):
     def add_command_window(self):
         self.add_command_frame = tk.Toplevel(self)
         self.add_command_frame.title("Add Command")
-        self.add_command_frame.geometry("300x300")
+        self.add_command_frame.geometry("300x400")  # Adjusted height to accommodate new fields
 
         tk.Label(self.add_command_frame, text="Name:").pack(pady=5)
         self.command_name_entry = tk.Entry(self.add_command_frame)
@@ -117,6 +118,14 @@ class CommandToolbox(tk.Tk):
         self.command_category_combobox = ttk.Combobox(self.add_command_frame, values=self.categories)
         self.command_category_combobox.pack(pady=5)
 
+        tk.Label(self.add_command_frame, text="Interval (seconds):").pack(pady=5)
+        self.command_interval_entry = tk.Entry(self.add_command_frame)
+        self.command_interval_entry.pack(pady=5)
+
+        tk.Label(self.add_command_frame, text="Count:").pack(pady=5)
+        self.command_count_entry = tk.Entry(self.add_command_frame)
+        self.command_count_entry.pack(pady=5)
+
         tk.Button(self.add_command_frame, text="Save", command=self.add_command).pack(pady=5)
         tk.Button(self.add_command_frame, text="Cancel", command=self.add_command_frame.destroy).pack(pady=5)
 
@@ -133,7 +142,18 @@ class CommandToolbox(tk.Tk):
         category = self.command_category_combobox.get().strip()
         if not category:
             category = 'Uncategorized'
-        self.commands[name] = {"command": command, "description": description, "category": category}
+        interval = self.command_interval_entry.get().strip()
+        count = self.command_count_entry.get().strip()
+        if not interval.isdigit() or not count.isdigit():
+            messagebox.showerror("Error", "Interval and Count must be valid numbers.")
+            return
+        self.commands[name] = {
+            "command": command, 
+            "description": description, 
+            "category": category,
+            "interval": int(interval),
+            "count": int(count)
+        }
         save_commands(self.commands)
         self.update_command_listbox()
         self.add_command_frame.destroy()
@@ -159,12 +179,16 @@ class CommandToolbox(tk.Tk):
         name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
             command = self.commands[name]["command"]
-            try:
-                # Capture the output of the command
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                output = result.stdout if result.stdout else result.stderr
-            except Exception as e:
-                output = str(e)
+            interval = self.commands[name]["interval"]
+            count = self.commands[name]["count"]
+            output = ""
+            for _ in range(count):
+                try:
+                    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                    output += result.stdout if result.stdout else result.stderr
+                except Exception as e:
+                    output += str(e)
+                time.sleep(interval)
             
             # Display the output in the Text widget
             self.output_text.config(state=tk.NORMAL)
