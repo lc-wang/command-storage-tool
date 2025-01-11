@@ -74,49 +74,6 @@ class CommandToolbox(tk.Tk):
                 command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
                 self.command_listbox.insert(tk.END, command_info)
 
-    def display_command_result(self, name):
-        details = self.commands.get(name)
-        if not details:
-            messagebox.showerror("Error", f"No command found with the name '{name}'.")
-            return
-        command = details["command"]
-        self.output_text.config(state=tk.NORMAL)
-        self.output_text.delete(1.0, tk.END)
-        self.output_text.insert(tk.END, f"Executing command: {command}\n")
-        self.output_text.config(state=tk.DISABLED)
-        threading.Thread(target=self.run_command, args=(name, command, self.output_text)).start()
-
-    def run_command(self, name, command, output_text):
-        # Use default values if 'count' or 'interval' keys are missing
-        count = self.commands[name].get("count", 1)
-        interval = self.commands[name].get("interval", 0)
-
-        # Initialize progress info for the command
-        self.progress_info[name] = {
-            'progress': 0,
-            'max': count,
-            'output': []
-        }
-
-        for i in range(count):
-            try:
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                output = result.stdout if result.stdout else result.stderr
-            except Exception as e:
-                output = str(e)
-
-            # Use the after method to update the GUI from the main thread
-            self.after(0, self.update_output_text, f"Execution {i+1}/{count}:\n{output}", output_text)
-            
-            # Update progress info
-            self.progress_info[name]['progress'] = i + 1
-            self.progress_info[name]['output'].append(output)
-            
-            time.sleep(interval)
-
-        # Final update to ensure progress is set to max
-        self.progress_info[name]['progress'] = count
-
     def update_output_text(self, output, output_text):
         output_text.config(state=tk.NORMAL)
         output_text.insert(tk.END, f"{output}\n")
