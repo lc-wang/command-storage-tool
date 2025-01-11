@@ -6,10 +6,10 @@ import json
 import threading
 import time  # Import the time module
 
-class CommandToolbox(tk.Tk):
+class CommandStorageTool(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Linux Commands Toolbox")
+        self.title("Command Storage Tool")
         self.geometry("800x800")  # Adjust height to accommodate more widgets
         self.commands = load_commands()
         self.categories = self.get_categories()
@@ -376,5 +376,5 @@ class CommandToolbox(tk.Tk):
                 messagebox.showerror("Error", f"Failed to import configuration: {e}")
 
 if __name__ == "__main__":
-    app = CommandToolbox()
+    app = CommandStorageTool()
     app.mainloop()
