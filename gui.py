@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 from tkinter import ttk  # Import the ttk module for Combobox
 from command_utils import load_commands, save_commands  # Import the utility functions
+import subprocess
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Linux Commands Toolbox")
-        self.geometry("800x400")
+        self.geometry("800x600")  # Adjusted height to accommodate output frame
         self.commands = load_commands()
         self.categories = self.get_categories()
 
@@ -34,6 +35,11 @@ class CommandToolbox(tk.Tk):
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
         tk.Button(self.main_frame, text="Execute Command", command=self.execute_command).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
+
+        # Add a Text widget to display command output
+        self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
+        self.output_text.pack(pady=10, fill='both', expand=True)
+        self.output_text.config(state=tk.DISABLED)
 
         self.update_category_listbox()
 
@@ -152,7 +158,19 @@ class CommandToolbox(tk.Tk):
             return
         name = selected_command.split(",")[0].split(":")[1].strip()
         if name in self.commands:
-            os.system(self.commands[name]["command"])
+            command = self.commands[name]["command"]
+            try:
+                # Capture the output of the command
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                output = result.stdout if result.stdout else result.stderr
+            except Exception as e:
+                output = str(e)
+            
+            # Display the output in the Text widget
+            self.output_text.config(state=tk.NORMAL)
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, output)
+            self.output_text.config(state=tk.DISABLED)
         else:
             messagebox.showerror("Error", "No command found with that name.")
 
