@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog, ttk
 from command_utils import load_commands, save_commands  # Import the utility functions
 import subprocess
-import time
 import json
 import threading
+import time  # Import the time module
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
@@ -35,6 +35,7 @@ class CommandToolbox(tk.Tk):
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
         self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
+        self.command_listbox.bind("<<ListboxSelect>>", self.display_command_result)  # Bind single-click event
 
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
@@ -70,6 +71,36 @@ class CommandToolbox(tk.Tk):
         for name, details in self.commands.items():
             if details.get('category', 'Uncategorized') == selected_category:
                 self.command_listbox.insert(tk.END, f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}")
+
+    def display_command_result(self, event=None):
+        selected_command = self.command_listbox.get(tk.ACTIVE)
+        if not selected_command:
+            return
+        name = selected_command.split(",")[0].split(":")[1].strip()
+        if name in self.commands:
+            details = self.commands[name]
+            command = details["command"]
+            self.output_text.config(state=tk.NORMAL)
+            self.output_text.delete(1.0, tk.END)
+            self.output_text.insert(tk.END, f"Executing command: {command}\n")
+            self.output_text.config(state=tk.DISABLED)
+            threading.Thread(target=self.run_command, args=(command,)).start()
+
+    def run_command(self, command):
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            output = result.stdout if result.stdout else result.stderr
+        except Exception as e:
+            output = str(e)
+        
+        # Use the after method to update the GUI from the main thread
+        self.after(0, self.update_output_text, output)
+
+    def update_output_text(self, output):
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.insert(tk.END, f"Result:\n{output}\n")
+        self.output_text.config(state=tk.DISABLED)
+        self.progress_bar['value'] = 100  # Set progress bar to complete
 
     def add_category(self):
         category = simpledialog.askstring("Add Category", "Enter a name for the category:").strip()
