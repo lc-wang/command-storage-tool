@@ -19,11 +19,6 @@ The Command Storage Tool is a Python-based application built using Tkinter that 
    git clone https://github.com/lc-wang/command-storage-tool.git
    cd command-storage-tool
 
-2. **Install Dependencies**:
-    Make sure you have Python installed. Then, install the required packages using pip:
-    ```bash
-    pip install -r requirements.txt
-    ```
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 License
