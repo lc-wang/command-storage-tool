@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog
-from tkinter import ttk  # Import the ttk module for Combobox
+from tkinter import messagebox, simpledialog, filedialog, ttk
 from command_utils import load_commands, save_commands  # Import the utility functions
 import subprocess
 import time
@@ -45,6 +44,10 @@ class CommandToolbox(tk.Tk):
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
         self.output_text.pack(pady=10, fill='both', expand=True)
         self.output_text.config(state=tk.DISABLED)
+
+        # Add a Progressbar widget to display command progress
+        self.progress_bar = ttk.Progressbar(self.main_frame, orient='horizontal', mode='determinate', length=500)
+        self.progress_bar.pack(pady=10, fill='both', expand=True)
 
         self.update_category_listbox()
 
@@ -255,6 +258,7 @@ class CommandToolbox(tk.Tk):
             count = self.commands[name]["count"]
             self.output_text.config(state=tk.NORMAL)
             self.output_text.delete(1.0, tk.END)
+            self.progress_bar['maximum'] = count
             for i in range(count):
                 try:
                     result = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -265,7 +269,11 @@ class CommandToolbox(tk.Tk):
                 # Display the output in the Text widget immediately
                 self.output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
                 self.output_text.see(tk.END)
+                
+                # Update the progress bar
+                self.progress_bar['value'] = i + 1
                 self.update()
+                
                 time.sleep(interval)
             self.output_text.config(state=tk.DISABLED)
         else:
