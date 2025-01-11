@@ -181,19 +181,20 @@ class CommandToolbox(tk.Tk):
             command = self.commands[name]["command"]
             interval = self.commands[name]["interval"]
             count = self.commands[name]["count"]
-            output = ""
-            for _ in range(count):
-                try:
-                    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                    output += result.stdout if result.stdout else result.stderr
-                except Exception as e:
-                    output += str(e)
-                time.sleep(interval)
-            
-            # Display the output in the Text widget
             self.output_text.config(state=tk.NORMAL)
             self.output_text.delete(1.0, tk.END)
-            self.output_text.insert(tk.END, output)
+            for i in range(count):
+                try:
+                    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                    output = result.stdout if result.stdout else result.stderr
+                except Exception as e:
+                    output = str(e)
+                
+                # Display the output in the Text widget immediately
+                self.output_text.insert(tk.END, f"Execution {i+1}/{count}:\n{output}\n")
+                self.output_text.see(tk.END)
+                self.update()
+                time.sleep(interval)
             self.output_text.config(state=tk.DISABLED)
         else:
             messagebox.showerror("Error", "No command found with that name.")
