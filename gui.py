@@ -1,9 +1,10 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, filedialog
 from tkinter import ttk  # Import the ttk module for Combobox
 from command_utils import load_commands, save_commands  # Import the utility functions
 import subprocess
 import time
+import json
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
@@ -28,6 +29,7 @@ class CommandToolbox(tk.Tk):
 
         tk.Button(self.sidebar_frame, text="Add Category", command=self.add_category).pack(pady=10)
         tk.Button(self.sidebar_frame, text="Delete Category", command=self.delete_category).pack(pady=10)
+        tk.Button(self.sidebar_frame, text="Export Config", command=self.export_config).pack(pady=10)  # Export button
 
         self.command_listbox = tk.Listbox(self.main_frame, width=80)
         self.command_listbox.pack(pady=10)
@@ -267,6 +269,18 @@ class CommandToolbox(tk.Tk):
             self.output_text.config(state=tk.DISABLED)
         else:
             messagebox.showerror("Error", "No command found with that name.")
+
+    def export_config(self):
+        # Open a file dialog to choose the save location
+        file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if file_path:
+            # Write the current command configuration to the chosen file
+            try:
+                with open(file_path, "w") as file:
+                    json.dump(self.commands, file, indent=4)
+                messagebox.showinfo("Success", f"Configuration exported to {file_path}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export configuration: {e}")
 
 if __name__ == "__main__":
     app = CommandToolbox()
