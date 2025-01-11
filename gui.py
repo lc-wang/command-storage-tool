@@ -1,23 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 from tkinter import ttk  # Import the ttk module for Combobox
-import json
-import os
-
-# File to store commands
-COMMANDS_FILE = "commands.json"
-
-def load_commands():
-    """Load commands from the JSON file."""
-    if not os.path.exists(COMMANDS_FILE):
-        return {}
-    with open(COMMANDS_FILE, "r") as file:
-        return json.load(file)
-
-def save_commands(commands):
-    """Save commands to the JSON file."""
-    with open(COMMANDS_FILE, "w") as file:
-        json.dump(commands, file, indent=4)
+from command_utils import load_commands, save_commands  # Import the utility functions
 
 class CommandToolbox(tk.Tk):
     def __init__(self):
@@ -90,19 +74,21 @@ class CommandToolbox(tk.Tk):
         if selected_category == 'Uncategorized':
             messagebox.showerror("Error", "Cannot delete the 'Uncategorized' category.")
             return
-        confirm = messagebox.askyesno("Delete Category", f"Are you sure you want to delete the category '{selected_category}' and all its commands?")
+        confirm = messagebox.askyesno("Delete Category", f"Are you sure you want to delete the category '{selected_category}' and move its commands to 'Uncategorized'?")
         if not confirm:
             return
-        # Remove all commands in the selected category
-        commands_to_delete = [name for name, details in self.commands.items() if details.get('category', 'Uncategorized') == selected_category]
-        for name in commands_to_delete:
-            del self.commands[name]
+
+        # Move commands in the selected category to 'Uncategorized'
+        for name, details in self.commands.items():
+            if details.get('category', 'Uncategorized') == selected_category:
+                self.commands[name]['category'] = 'Uncategorized'
+        
         # Remove the category
         self.categories.remove(selected_category)
         save_commands(self.commands)
         self.update_category_listbox()
         self.update_command_listbox()
-        messagebox.showinfo("Success", f"Category '{selected_category}' and all its commands deleted successfully!")
+        messagebox.showinfo("Success", f"Category '{selected_category}' deleted successfully and its commands moved to 'Uncategorized'!")
 
     def add_command_window(self):
         self.add_command_frame = tk.Toplevel(self)
