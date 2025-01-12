@@ -6,7 +6,7 @@ The Command Storage Tool is a Python-based application built using Tkinter that 
 
 ## Features
 
-- **Add, Modify, and Delete Commands**: Easily manage your collection of Linux commands.
+- **Add, Modify, and Delete Commands**: Easily manage your collection of commands.
 - **Categorization**: Organize commands into different categories.
 - **Command Execution**: Execute commands directly from the interface.
 - **Progress Tracking**: Track the execution progress of commands.
