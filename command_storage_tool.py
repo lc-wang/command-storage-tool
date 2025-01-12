@@ -43,6 +43,7 @@ class CommandStorageTool(tk.Tk):
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
         tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)  # Bind to start_command_thread
         tk.Button(self.main_frame, text="Show Progress", command=self.show_progress_window).pack(pady=10)
+        tk.Button(self.main_frame, text="Clear Output", command=self.clear_output).pack(pady=10)  # New Clear Output button
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
 
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
@@ -50,6 +51,12 @@ class CommandStorageTool(tk.Tk):
         self.output_text.config(state=tk.DISABLED)
 
         self.update_category_listbox()
+
+    def clear_output(self):
+        """Clear the content of the output_text widget."""
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.delete(1.0, tk.END)
+        self.output_text.config(state=tk.DISABLED)
 
     def get_categories(self):
         """Get unique categories from commands."""
