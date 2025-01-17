@@ -39,11 +39,16 @@ class CommandStorageTool(tk.Tk):
         self.command_listbox.pack(pady=10)
         self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
 
+        # Add search entry and button
+        self.search_entry = tk.Entry(self.main_frame)
+        self.search_entry.pack(pady=5)
+        tk.Button(self.main_frame, text="Search", command=self.search_commands).pack(pady=5)
+
         tk.Button(self.main_frame, text="Add Command", command=self.add_command_window).pack(pady=10)
         tk.Button(self.main_frame, text="Delete Command", command=self.delete_command).pack(pady=10)
-        tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)  # Bind to start_command_thread
+        tk.Button(self.main_frame, text="Execute Command", command=self.start_command_thread).pack(pady=10)
         tk.Button(self.main_frame, text="Show Progress", command=self.show_progress_window).pack(pady=10)
-        tk.Button(self.main_frame, text="Clear Output", command=self.clear_output).pack(pady=10)  # New Clear Output button
+        tk.Button(self.main_frame, text="Clear Output", command=self.clear_output).pack(pady=10)
         tk.Button(self.main_frame, text="Exit", command=self.quit).pack(pady=10)
 
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
@@ -381,6 +386,40 @@ class CommandStorageTool(tk.Tk):
                 messagebox.showinfo("Success", f"Configuration imported from {file_path}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to import configuration: {e}")
+
+    def search_commands(self):
+        query = self.search_entry.get().strip().lower()
+        if not query:
+            messagebox.showerror("Error", "Search query cannot be empty.")
+            return
+
+        search_results = {}
+        for name, details in self.commands.items():
+            if (query in name.lower() or
+                query in details.get('command', '').lower() or
+                query in details.get('description', '').lower() or
+                query in details.get('category', '').lower()):
+                search_results[name] = details
+
+        if not search_results:
+            messagebox.showinfo("Search Results", "No commands found matching the query.")
+        else:
+            self.update_command_listbox(commands=search_results)
+
+    def update_command_listbox(self, event=None, commands=None):
+        self.command_listbox.delete(0, tk.END)
+        if commands is None:
+            selected_category = self.category_listbox.get(tk.ACTIVE)
+            if not selected_category:
+                return
+            for name, details in self.commands.items():
+                if details.get('category', 'Uncategorized') == selected_category:
+                    command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
+                    self.command_listbox.insert(tk.END, command_info)
+        else:
+            for name, details in commands.items():
+                command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
+                self.command_listbox.insert(tk.END, command_info)
 
 if __name__ == "__main__":
     app = CommandStorageTool()
