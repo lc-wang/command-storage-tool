@@ -26,31 +26,34 @@ class CommandStorageTool(tk.Tk):
         self.update_category_listbox()
 
     def create_sidebar(self):
-        self.sidebar_frame = tk.Frame(self, width=200, bg='lightgrey')
-        self.sidebar_frame.pack(expand=False, fill='y', side='left', anchor='nw')
+        self.sidebar_frame = tk.Frame(self, bg='lightgrey')
+        self.sidebar_frame.pack(side='left', fill='y')
 
-        self.category_listbox = tk.Listbox(self.sidebar_frame, width=30)
-        self.category_listbox.pack(pady=10, padx=10)
+        self.category_listbox = tk.Listbox(self.sidebar_frame)
+        self.category_listbox.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
         self.category_listbox.bind("<<ListboxSelect>>", self.update_command_listbox)
 
         sidebar_buttons = [("Add Category", self.add_category),
                            ("Delete Category", self.delete_category),
                            ("Export Config", self.export_config),
                            ("Import Config", self.import_config)]
-        for text, command in sidebar_buttons:
-            tk.Button(self.sidebar_frame, text=text, command=command).pack(pady=10)
+        for i, (text, command) in enumerate(sidebar_buttons, 1):
+            tk.Button(self.sidebar_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, sticky='ew')
+
+        self.sidebar_frame.grid_rowconfigure(0, weight=1)
+        self.sidebar_frame.grid_columnconfigure(0, weight=1)
 
     def create_main_frame(self):
-        self.main_frame = tk.Frame(self, width=600)
-        self.main_frame.pack(expand=True, fill='both', side='right')
+        self.main_frame = tk.Frame(self)
+        self.main_frame.pack(side='right', fill='both', expand=True)
 
-        self.command_listbox = tk.Listbox(self.main_frame, width=80)
-        self.command_listbox.pack(pady=10)
+        self.command_listbox = tk.Listbox(self.main_frame)
+        self.command_listbox.grid(row=0, column=0, padx=10, pady=10, sticky='nsew', columnspan=3)
         self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
 
         self.search_entry = tk.Entry(self.main_frame)
-        self.search_entry.pack(pady=5)
-        tk.Button(self.main_frame, text="Search", command=self.perform_search).pack(pady=5)
+        self.search_entry.grid(row=1, column=0, padx=10, pady=5, sticky='ew')
+        tk.Button(self.main_frame, text="Search", command=self.perform_search).grid(row=1, column=1, padx=5, pady=5, sticky='ew')
 
         main_buttons = [("Add Command", self.add_command_window),
                         ("Delete Command", self.delete_command),
@@ -59,12 +62,17 @@ class CommandStorageTool(tk.Tk):
                         ("Clear Output", self.clear_output),
                         ("Exit", self.quit),
                         ("Schedule Command", self.schedule_command_window)]
-        for text, command in main_buttons:
-            tk.Button(self.main_frame, text=text, command=command).pack(pady=10)
+        for i, (text, command) in enumerate(main_buttons, 2):
+            tk.Button(self.main_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, columnspan=2, sticky='ew')
 
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
-        self.output_text.pack(pady=10, fill='both', expand=True)
+        self.output_text.grid(row=i+1, column=0, padx=10, pady=10, sticky='nsew', columnspan=3)
         self.output_text.config(state=tk.DISABLED)
+
+        self.main_frame.grid_rowconfigure(i+1, weight=1)
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        self.main_frame.grid_columnconfigure(1, weight=1)
+        self.main_frame.grid_columnconfigure(2, weight=1)
 
     def show_progress_window(self):
         self.progress_window = tk.Toplevel(self)
