@@ -6,16 +6,16 @@ import threading
 import time
 import json
 import schedule
-import requests
-import base64
-from bs4 import BeautifulSoup
 from gui_utils import show_message
+import base64
+from bs4 import BeautifulSoup  # Ensure this line is included
+import requests
 
 class CommandStorageTool(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Command Storage Tool")
-        self.geometry("800x800")
+        self.geometry("1000x800")
         self.commands = load_commands()
         self.categories = get_categories(self.commands)
         self.progress_info = {}
@@ -27,6 +27,7 @@ class CommandStorageTool(tk.Tk):
     def create_widgets(self):
         self.create_sidebar()
         self.create_main_frame()
+        self.create_online_search_frame()
         self.update_category_listbox()
 
     def create_sidebar(self):
@@ -58,7 +59,7 @@ class CommandStorageTool(tk.Tk):
 
         self.search_entry = tk.Entry(self.main_frame)
         self.search_entry.grid(row=1, column=0, padx=10, pady=5, sticky='ew')
-        tk.Button(self.main_frame, text="Search", command=self.perform_search).grid(row=1, column=1, padx=5, pady=5, sticky='ew')
+        tk.Button(self.main_frame, text="Search Local", command=self.perform_local_search).grid(row=1, column=1, padx=5, pady=5, sticky='ew')
 
         main_buttons = [("Add Command", self.add_command_window),
                         ("Delete Command", self.delete_command),
@@ -78,6 +79,21 @@ class CommandStorageTool(tk.Tk):
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_columnconfigure(1, weight=1)
         self.main_frame.grid_columnconfigure(2, weight=1)
+
+    def create_online_search_frame(self):
+        self.online_search_frame = tk.Frame(self)
+        self.online_search_frame.pack(side='bottom', fill='both', expand=True)
+
+        self.online_search_entry = tk.Entry(self.online_search_frame)
+        self.online_search_entry.grid(row=0, column=0, padx=10, pady=5, sticky='ew')
+        tk.Button(self.online_search_frame, text="Search Online", command=self.perform_online_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+
+        self.online_command_listbox = tk.Listbox(self.online_search_frame)
+        self.online_command_listbox.grid(row=1, column=0, padx=10, pady=10, sticky='nsew', columnspan=2)
+
+        self.online_search_frame.grid_rowconfigure(1, weight=1)
+        self.online_search_frame.grid_columnconfigure(0, weight=1)
+        self.online_search_frame.grid_columnconfigure(1, weight=1)
 
     def show_progress_window(self):
         self.progress_window = tk.Toplevel(self)
@@ -136,8 +152,30 @@ class CommandStorageTool(tk.Tk):
             command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
             self.command_listbox.insert(tk.END, command_info)
 
+    def perform_local_search(self):
+        query = self.search_entry.get().strip().lower()
+        if not query:
+            show_message("Error", "Search query cannot be empty.", "error")
+            return
+
+        search_results = search_commands(self.commands, query)
+        if not search_results:
+            show_message("Search Results", "No commands found matching the query.")
+        else:
+            self.update_command_listbox(commands=search_results)
+
+    def perform_online_search(self):
+        query = self.online_search_entry.get().strip().lower()
+        if not query:
+            show_message("Error", "Search query cannot be empty.", "error")
+            return
+        
+        self.search_online_commands(query)
+
     def search_online_commands(self, query):
+        # Encode the query in base64 format
         base64_query = base64.urlsafe_b64encode(query.encode()).decode()
+
         api_url = f"https://www.commandlinefu.com/commands/matching/{query}/{base64_query}/json"
         try:
             response = requests.get(api_url)
@@ -155,30 +193,33 @@ class CommandStorageTool(tk.Tk):
                 if commands:
                     self.display_online_commands(commands)
                 else:
-                    show_message("Search Results", "No commands found matching the query on the web. json")
+                    show_message("Search Results", "No commands found matching the query on the web.")
             else:
                 # Handle HTML response
                 soup = BeautifulSoup(response.text, 'html.parser')
                 command_elements = soup.find_all('div', class_='command')
                 commands = []
                 for elem in command_elements:
-                    command_text = elem.find('pre', class_='command').text
-                    summary_text = elem.find('div', class_='description').text
-                    commands.append({'command': command_text, 'summary': summary_text})
+                    command_text_elem = elem.find('pre', class_='command')
+                    summary_text_elem = elem.find('div', class_='description')
+                    if command_text_elem and summary_text_elem:
+                        command_text = command_text_elem.text.strip()
+                        summary_text = summary_text_elem.text.strip()
+                        commands.append({'command': command_text, 'summary': summary_text})
                 if commands:
                     self.display_online_commands(commands)
                 else:
-                    show_message("Search Results", "No commands found matching the query on the web. html")
+                    show_message("Search Results", "No commands found matching the query on the web.")
         except requests.exceptions.RequestException as e:
             show_message("Error", f"Failed to fetch commands: {e}", "error")
         except ValueError:
             show_message("Error", "Invalid JSON response received.", "error")
 
     def display_online_commands(self, commands):
-        self.command_listbox.delete(0, tk.END)
+        self.online_command_listbox.delete(0, tk.END)
         for cmd in commands:
             command_info = f"Command: {cmd['command']}, Summary: {cmd['summary']}"
-            self.command_listbox.insert(tk.END, command_info)
+            self.online_command_listbox.insert(tk.END, command_info)
 
     def perform_search(self):
         query = self.search_entry.get().strip().lower()
