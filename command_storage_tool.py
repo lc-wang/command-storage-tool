@@ -15,7 +15,7 @@ class CommandStorageTool(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Command Storage Tool")
-        self.geometry("1000x800")
+        self.geometry("1250x400")  # Adjusted window size to better fit widgets
         self.commands = load_commands()
         self.categories = get_categories(self.commands)
         self.progress_info = {}
@@ -27,12 +27,12 @@ class CommandStorageTool(tk.Tk):
     def create_widgets(self):
         self.create_sidebar()
         self.create_main_frame()
-        self.create_online_search_frame()
+        self.create_search_frame()
         self.update_category_listbox()
 
     def create_sidebar(self):
         self.sidebar_frame = tk.Frame(self, bg='lightgrey')
-        self.sidebar_frame.pack(side='left', fill='y')
+        self.sidebar_frame.pack(side='left', fill='y', expand=False)
 
         self.category_listbox = tk.Listbox(self.sidebar_frame)
         self.category_listbox.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
@@ -51,15 +51,7 @@ class CommandStorageTool(tk.Tk):
 
     def create_main_frame(self):
         self.main_frame = tk.Frame(self)
-        self.main_frame.pack(side='right', fill='both', expand=True)
-
-        self.command_listbox = tk.Listbox(self.main_frame)
-        self.command_listbox.grid(row=0, column=0, padx=10, pady=10, sticky='nsew', columnspan=3)
-        self.command_listbox.bind("<Double-Button-1>", self.modify_command_window)
-
-        self.search_entry = tk.Entry(self.main_frame)
-        self.search_entry.grid(row=1, column=0, padx=10, pady=5, sticky='ew')
-        tk.Button(self.main_frame, text="Search Local", command=self.perform_local_search).grid(row=1, column=1, padx=5, pady=5, sticky='ew')
+        self.main_frame.pack(side='left', fill='both', expand=True)
 
         main_buttons = [("Add Command", self.add_command_window),
                         ("Delete Command", self.delete_command),
@@ -68,21 +60,20 @@ class CommandStorageTool(tk.Tk):
                         ("Clear Output", self.clear_output),
                         ("Exit", self.quit),
                         ("Schedule Command", self.schedule_command_window)]
-        for i, (text, command) in enumerate(main_buttons, 2):
-            tk.Button(self.main_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, columnspan=2, sticky='ew')
+        for i, (text, command) in enumerate(main_buttons, 1):
+            tk.Button(self.main_frame, text=text, command=command).pack(fill='x', padx=10, pady=5)
 
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
-        self.output_text.grid(row=i+1, column=0, padx=10, pady=10, sticky='nsew', columnspan=3)
+        self.output_text.pack(fill='both', padx=10, pady=10, expand=True)
         self.output_text.config(state=tk.DISABLED)
 
-        self.main_frame.grid_rowconfigure(i+1, weight=1)
-        self.main_frame.grid_columnconfigure(0, weight=1)
-        self.main_frame.grid_columnconfigure(1, weight=1)
-        self.main_frame.grid_columnconfigure(2, weight=1)
+    def create_search_frame(self):
+        self.search_frame = tk.Frame(self)
+        self.search_frame.pack(side='right', fill='both', expand=True)
 
-    def create_online_search_frame(self):
-        self.online_search_frame = tk.Frame(self)
-        self.online_search_frame.pack(side='bottom', fill='both', expand=True)
+        # Online search frame
+        self.online_search_frame = tk.Frame(self.search_frame)
+        self.online_search_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
         self.online_search_entry = tk.Entry(self.online_search_frame)
         self.online_search_entry.grid(row=0, column=0, padx=10, pady=5, sticky='ew')
@@ -94,6 +85,21 @@ class CommandStorageTool(tk.Tk):
         self.online_search_frame.grid_rowconfigure(1, weight=1)
         self.online_search_frame.grid_columnconfigure(0, weight=1)
         self.online_search_frame.grid_columnconfigure(1, weight=1)
+
+        # Local search frame
+        self.local_search_frame = tk.Frame(self.search_frame)
+        self.local_search_frame.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
+
+        self.search_entry = tk.Entry(self.local_search_frame)
+        self.search_entry.grid(row=0, column=0, padx=10, pady=5, sticky='ew')
+        tk.Button(self.local_search_frame, text="Search Local", command=self.perform_local_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+
+        self.local_command_listbox = tk.Listbox(self.local_search_frame)
+        self.local_command_listbox.grid(row=1, column=0, padx=10, pady=10, sticky='nsew', columnspan=2)
+
+        self.local_search_frame.grid_rowconfigure(1, weight=1)
+        self.local_search_frame.grid_columnconfigure(0, weight=1)
+        self.local_search_frame.grid_columnconfigure(1, weight=1)
 
     def show_progress_window(self):
         self.progress_window = tk.Toplevel(self)
@@ -145,12 +151,12 @@ class CommandStorageTool(tk.Tk):
             self.category_listbox.insert(tk.END, category)
 
     def update_command_listbox(self, event=None, commands=None):
-        self.command_listbox.delete(0, tk.END)
+        self.local_command_listbox.delete(0, tk.END)
         selected_category = self.category_listbox.get(tk.ACTIVE) if commands is None else None
         commands = commands or {name: details for name, details in self.commands.items() if details.get('category', 'Uncategorized') == selected_category}
         for name, details in commands.items():
             command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
-            self.command_listbox.insert(tk.END, command_info)
+            self.local_command_listbox.insert(tk.END, command_info)
 
     def perform_local_search(self):
         query = self.search_entry.get().strip().lower()
@@ -162,7 +168,13 @@ class CommandStorageTool(tk.Tk):
         if not search_results:
             show_message("Search Results", "No commands found matching the query.")
         else:
-            self.update_command_listbox(commands=search_results)
+            self.update_local_command_listbox(commands=search_results)
+
+    def update_local_command_listbox(self, commands):
+        self.local_command_listbox.delete(0, tk.END)
+        for name, details in commands.items():
+            command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
+            self.local_command_listbox.insert(tk.END, command_info)
 
     def perform_online_search(self):
         query = self.online_search_entry.get().strip().lower()
@@ -180,13 +192,6 @@ class CommandStorageTool(tk.Tk):
         try:
             response = requests.get(api_url)
             response.raise_for_status()  # Raise an exception for HTTP errors
-
-            # Log the response status and headers for debugging
-            print(f"Response status code: {response.status_code}")
-            print(f"Response headers: {response.headers}")
-
-            # Log the response text for debugging
-            print(f"Response from API: {response.text}")
 
             if 'application/json' in response.headers.get('Content-Type', ''):
                 commands = response.json()
