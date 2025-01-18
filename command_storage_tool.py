@@ -15,7 +15,9 @@ class CommandStorageTool(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Command Storage Tool")
-        self.geometry("1250x400")  # Adjusted window size to better fit widgets
+        self.geometry("1350x600")  # Adjusted window size to better fit widgets
+        self.style = ttk.Style(self)
+        self.style.theme_use('clam')  # Use a modern theme
         self.commands = load_commands()
         self.categories = get_categories(self.commands)
         self.progress_info = {}
@@ -31,7 +33,7 @@ class CommandStorageTool(tk.Tk):
         self.update_category_listbox()
 
     def create_sidebar(self):
-        self.sidebar_frame = tk.Frame(self, bg='lightgrey')
+        self.sidebar_frame = ttk.Frame(self, padding="10")
         self.sidebar_frame.pack(side='left', fill='y', expand=False)
 
         self.category_listbox = tk.Listbox(self.sidebar_frame)
@@ -44,13 +46,13 @@ class CommandStorageTool(tk.Tk):
                            ("Import Config", self.import_config),
                            ("Command History", self.show_history_window)]
         for i, (text, command) in enumerate(sidebar_buttons, 1):
-            tk.Button(self.sidebar_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, sticky='ew')
+            ttk.Button(self.sidebar_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, sticky='ew')
 
         self.sidebar_frame.grid_rowconfigure(0, weight=1)
         self.sidebar_frame.grid_columnconfigure(0, weight=1)
 
     def create_main_frame(self):
-        self.main_frame = tk.Frame(self)
+        self.main_frame = ttk.Frame(self, padding="10")
         self.main_frame.pack(side='left', fill='both', expand=True)
 
         main_buttons = [("Add Command", self.add_command_window),
@@ -61,23 +63,23 @@ class CommandStorageTool(tk.Tk):
                         ("Exit", self.quit),
                         ("Schedule Command", self.schedule_command_window)]
         for i, (text, command) in enumerate(main_buttons, 1):
-            tk.Button(self.main_frame, text=text, command=command).pack(fill='x', padx=10, pady=5)
+            ttk.Button(self.main_frame, text=text, command=command).pack(fill='x', padx=10, pady=5)
 
         self.output_text = tk.Text(self.main_frame, height=10, wrap='word')
         self.output_text.pack(fill='both', padx=10, pady=10, expand=True)
         self.output_text.config(state=tk.DISABLED)
 
     def create_search_frame(self):
-        self.search_frame = tk.Frame(self)
+        self.search_frame = ttk.Frame(self, padding="10")
         self.search_frame.pack(side='right', fill='both', expand=True)
 
         # Online search frame
-        self.online_search_frame = tk.Frame(self.search_frame)
+        self.online_search_frame = ttk.Frame(self.search_frame, padding="10")
         self.online_search_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
-        self.online_search_entry = tk.Entry(self.online_search_frame)
+        self.online_search_entry = ttk.Entry(self.online_search_frame)
         self.online_search_entry.grid(row=0, column=0, padx=10, pady=5, sticky='ew')
-        tk.Button(self.online_search_frame, text="Search Online", command=self.perform_online_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        ttk.Button(self.online_search_frame, text="Search Online", command=self.perform_online_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
         self.online_command_listbox = tk.Listbox(self.online_search_frame)
         self.online_command_listbox.grid(row=1, column=0, padx=10, pady=10, sticky='nsew', columnspan=2)
@@ -87,12 +89,12 @@ class CommandStorageTool(tk.Tk):
         self.online_search_frame.grid_columnconfigure(1, weight=1)
 
         # Local search frame
-        self.local_search_frame = tk.Frame(self.search_frame)
+        self.local_search_frame = ttk.Frame(self.search_frame, padding="10")
         self.local_search_frame.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
 
-        self.search_entry = tk.Entry(self.local_search_frame)
+        self.search_entry = ttk.Entry(self.local_search_frame)
         self.search_entry.grid(row=0, column=0, padx=10, pady=5, sticky='ew')
-        tk.Button(self.local_search_frame, text="Search Local", command=self.perform_local_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        ttk.Button(self.local_search_frame, text="Search Local", command=self.perform_local_search).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
 
         self.local_command_listbox = tk.Listbox(self.local_search_frame)
         self.local_command_listbox.grid(row=1, column=0, padx=10, pady=10, sticky='nsew', columnspan=2)
@@ -106,7 +108,7 @@ class CommandStorageTool(tk.Tk):
         self.progress_window.title("Command Progress")
         self.progress_window.geometry("600x400")
 
-        self.progress_frame = tk.Frame(self.progress_window)
+        self.progress_frame = ttk.Frame(self.progress_window, padding="10")
         self.progress_frame.pack(pady=10, fill='both', expand=True)
 
         for name, info in self.progress_info.items():
@@ -115,15 +117,15 @@ class CommandStorageTool(tk.Tk):
         self.update_progress_window()
 
     def create_progress_bar(self, name, info):
-        progress_frame = tk.Frame(self.progress_frame)
+        progress_frame = ttk.Frame(self.progress_frame)
         progress_frame.pack(pady=5, fill='x')
 
-        command_label = tk.Label(progress_frame, text=name, font=("Helvetica", 12, "bold"))
+        command_label = ttk.Label(progress_frame, text=name, font=("Helvetica", 12, "bold"))
         command_label.pack(anchor='w')
 
         progress_bar = ttk.Progressbar(progress_frame, orient='horizontal', mode='determinate', length=400)
         progress_bar.pack(side='left', padx=10, fill='x', expand=True)
-        percentage_label = tk.Label(progress_frame, text=f"{int((info['progress'] / info['max']) * 100)}%")
+        percentage_label = ttk.Label(progress_frame, text=f"{int((info['progress'] / info['max']) * 100)}%")
         percentage_label.pack(side='right')
 
         progress_bar['maximum'] = info['max']
