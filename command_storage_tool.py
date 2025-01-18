@@ -6,6 +6,9 @@ import threading
 import time
 import json
 import schedule
+import requests
+import base64
+from bs4 import BeautifulSoup
 from gui_utils import show_message
 
 class CommandStorageTool(tk.Tk):
@@ -133,17 +136,61 @@ class CommandStorageTool(tk.Tk):
             command_info = f"Name: {name}, Command: {details['command']}, Description: {details.get('description', 'No description')}"
             self.command_listbox.insert(tk.END, command_info)
 
+    def search_online_commands(self, query):
+        base64_query = base64.urlsafe_b64encode(query.encode()).decode()
+        api_url = f"https://www.commandlinefu.com/commands/matching/{query}/{base64_query}/json"
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()  # Raise an exception for HTTP errors
+
+            # Log the response status and headers for debugging
+            print(f"Response status code: {response.status_code}")
+            print(f"Response headers: {response.headers}")
+
+            # Log the response text for debugging
+            print(f"Response from API: {response.text}")
+
+            if 'application/json' in response.headers.get('Content-Type', ''):
+                commands = response.json()
+                if commands:
+                    self.display_online_commands(commands)
+                else:
+                    show_message("Search Results", "No commands found matching the query on the web. json")
+            else:
+                # Handle HTML response
+                soup = BeautifulSoup(response.text, 'html.parser')
+                command_elements = soup.find_all('div', class_='command')
+                commands = []
+                for elem in command_elements:
+                    command_text = elem.find('pre', class_='command').text
+                    summary_text = elem.find('div', class_='description').text
+                    commands.append({'command': command_text, 'summary': summary_text})
+                if commands:
+                    self.display_online_commands(commands)
+                else:
+                    show_message("Search Results", "No commands found matching the query on the web. html")
+        except requests.exceptions.RequestException as e:
+            show_message("Error", f"Failed to fetch commands: {e}", "error")
+        except ValueError:
+            show_message("Error", "Invalid JSON response received.", "error")
+
+    def display_online_commands(self, commands):
+        self.command_listbox.delete(0, tk.END)
+        for cmd in commands:
+            command_info = f"Command: {cmd['command']}, Summary: {cmd['summary']}"
+            self.command_listbox.insert(tk.END, command_info)
+
     def perform_search(self):
         query = self.search_entry.get().strip().lower()
         if not query:
             show_message("Error", "Search query cannot be empty.", "error")
             return
 
-        search_results = search_commands(self.commands, query)
-        if not search_results:
-            show_message("Search Results", "No commands found matching the query.")
+        local_search_results = search_commands(self.commands, query)
+        if local_search_results:
+            self.update_command_listbox(commands=local_search_results)
         else:
-            self.update_command_listbox(commands=search_results)
+            self.search_online_commands(query)
 
     def add_category(self):
         category = simpledialog.askstring("Add Category", "Enter a name for the category:").strip()
