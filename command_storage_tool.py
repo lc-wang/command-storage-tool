@@ -16,6 +16,7 @@ class CommandStorageTool(tk.Tk):
         self.commands = load_commands()
         self.categories = get_categories(self.commands)
         self.progress_info = {}
+        self.command_history = []
 
         self.create_widgets()
         threading.Thread(target=self.run_schedule, daemon=True).start()
@@ -36,7 +37,8 @@ class CommandStorageTool(tk.Tk):
         sidebar_buttons = [("Add Category", self.add_category),
                            ("Delete Category", self.delete_category),
                            ("Export Config", self.export_config),
-                           ("Import Config", self.import_config)]
+                           ("Import Config", self.import_config),
+                           ("Command History", self.show_history_window)]
         for i, (text, command) in enumerate(sidebar_buttons, 1):
             tk.Button(self.sidebar_frame, text=text, command=command).grid(row=i, column=0, padx=10, pady=5, sticky='ew')
 
@@ -299,6 +301,43 @@ class CommandStorageTool(tk.Tk):
 
         self.progress_info[name]['progress'] = count
         self.output_text.config(state=tk.DISABLED)
+
+        # Store command execution result in history
+        self.command_history.append({
+            'name': name,
+            'command': command['command'],
+            'output': self.progress_info[name]['output'],
+            'timestamp': time.strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    def show_history_window(self):
+        self.history_window = tk.Toplevel(self)
+        self.history_window.title("Command History")
+        self.history_window.geometry("600x400")
+
+        self.history_listbox = tk.Listbox(self.history_window)
+        self.history_listbox.pack(fill='both', expand=True)
+        self.history_listbox.bind("<<ListboxSelect>>", self.show_history_details)
+
+        for entry in self.command_history:
+            self.history_listbox.insert(tk.END, f"{entry['timestamp']} - {entry['name']}")
+
+    def show_history_details(self, event):
+        selected_index = self.history_listbox.curselection()
+        if not selected_index:
+            return
+        selected_entry = self.command_history[selected_index[0]]
+        details = f"Name: {selected_entry['name']}\nCommand: {selected_entry['command']}\nTimestamp: {selected_entry['timestamp']}\n\nOutput:\n"
+        details += "\n".join(selected_entry['output'])
+
+        self.history_details_window = tk.Toplevel(self.history_window)
+        self.history_details_window.title("Command History Details")
+        self.history_details_window.geometry("600x400")
+
+        history_details_text = tk.Text(self.history_details_window, wrap='word')
+        history_details_text.insert(tk.END, details)
+        history_details_text.config(state=tk.DISABLED)
+        history_details_text.pack(fill='both', expand=True)
 
     def schedule_command(self, name, time_str):
         command = self.commands[name]
